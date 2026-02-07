@@ -1,0 +1,20 @@
+{
+  "name": "claude-code-transcripts",
+  "version": "0.1.0",
+  "description": "Convert Claude Code session files to mobile-friendly HTML transcripts",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "claude-code-transcripts": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "build": "bun build src/cli.ts --outdir dist --target node",
+    "start": "bun run src/cli.ts"
+  },
+  "dependencies": {
+    "marked": "^15.0.0",
+    "commander": "^13.0.0",
+    "@inquirer/prompts": "^7.0.0"
+  }
+}

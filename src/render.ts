@@ -2,6 +2,16 @@ import { marked } from "marked";
 import type { ContentBlock, RenderContext, TodoItem } from "./types.js";
 import { COMMIT_PATTERN } from "./constants.js";
 
+/** Tailwind class helpers for common patterns */
+const tw = {
+  card: "rounded-lg p-3 my-3 border",
+  expandBtn: "expand-btn w-full py-2 mt-1 bg-slate-100 border border-slate-200 rounded-md cursor-pointer text-sm text-slate-500 font-mono hover:bg-slate-200",
+  codePre: "bg-slate-900 text-slate-300 p-3 rounded-md overflow-x-auto text-sm leading-relaxed my-2 whitespace-pre-wrap break-words font-mono",
+  fileHeader: "font-semibold mb-1 flex items-center gap-2 text-sm",
+  filePath: "font-mono bg-slate-100 px-2 py-0.5 rounded text-sm text-slate-600",
+  fullPath: "font-mono text-xs text-slate-400 mb-2 break-all",
+};
+
 /** Escape HTML special characters (matches Python's html.escape) */
 export function escapeHtml(text: string): string {
   return text
@@ -26,9 +36,9 @@ export function formatJson(obj: unknown): string {
       parsed = JSON.parse(obj);
     }
     const formatted = JSON.stringify(parsed, null, 2);
-    return `<pre class="json">${escapeHtml(formatted)}</pre>`;
+    return `<pre class="json ${tw.codePre}">${escapeHtml(formatted)}</pre>`;
   } catch {
-    return `<pre>${escapeHtml(String(obj))}</pre>`;
+    return `<pre class="${tw.codePre}">${escapeHtml(String(obj))}</pre>`;
   }
 }
 
@@ -45,19 +55,19 @@ export function isJsonLike(text: unknown): boolean {
 // --- Macro equivalents (replacing Jinja2 macros with TS functions) ---
 
 export function imageBlock(mediaType: string, data: string): string {
-  return `<div class="image-block"><img src="data:${mediaType};base64,${data}" style="max-width: 100%"></div>`;
+  return `<div class="image-block my-2"><img src="data:${mediaType};base64,${data}" style="max-width: 100%" class="rounded-md"></div>`;
 }
 
 export function thinkingBlock(contentHtml: string): string {
-  return `<div class="thinking"><div class="thinking-label">Thinking</div>${contentHtml}</div>`;
+  return `<div class="thinking bg-slate-50 border border-slate-200 rounded-lg p-3 my-3 text-sm text-slate-500 prose-content"><div class="thinking-label text-xs font-semibold uppercase text-slate-400 mb-2 tracking-widest font-mono">Thinking</div>${contentHtml}</div>`;
 }
 
 export function assistantText(contentHtml: string): string {
-  return `<div class="assistant-text">${contentHtml}</div>`;
+  return `<div class="assistant-text my-2 prose-content">${contentHtml}</div>`;
 }
 
 export function userContent(contentHtml: string): string {
-  return `<div class="user-content">${contentHtml}</div>`;
+  return `<div class="user-content m-0 prose-content">${contentHtml}</div>`;
 }
 
 export function todoList(
@@ -80,11 +90,21 @@ export function todoList(
         icon = "\u25CB";
         statusClass = "todo-pending";
       }
-      return `<li class="todo-item ${statusClass}"><span class="todo-icon">${icon}</span><span class="todo-content">${escapeHtml(content)}</span></li>`;
+      const iconColors: Record<string, string> = {
+        "todo-completed": "text-emerald-700 bg-emerald-100",
+        "todo-in-progress": "text-cyan-700 bg-cyan-100",
+        "todo-pending": "text-slate-400 bg-slate-100",
+      };
+      const textColors: Record<string, string> = {
+        "todo-completed": "text-slate-500 line-through",
+        "todo-in-progress": "text-slate-800 font-medium",
+        "todo-pending": "text-slate-600",
+      };
+      return `<li class="todo-item ${statusClass} flex items-start gap-2.5 py-1.5 border-b border-black/5 last:border-b-0 text-sm"><span class="todo-icon shrink-0 w-5 h-5 flex items-center justify-center font-bold rounded-full ${iconColors[statusClass] || ""}">${icon}</span><span class="todo-content ${textColors[statusClass] || ""}">${escapeHtml(content)}</span></li>`;
     })
     .join("");
 
-  return `<div class="todo-list" data-tool-id="${escapeHtml(toolId)}"><div class="todo-header"><span class="todo-header-icon">\u2630</span> Task List</div><ul class="todo-items">${items}</ul></div>`;
+  return `<div class="todo-list bg-white border border-slate-200 rounded-lg p-3 my-3" data-tool-id="${escapeHtml(toolId)}"><div class="todo-header font-semibold text-slate-700 mb-2.5 flex items-center gap-2 text-sm font-mono"><span class="todo-header-icon">\u2630</span> Task List</div><ul class="todo-items list-none m-0 p-0">${items}</ul></div>`;
 }
 
 export function writeTool(
@@ -95,10 +115,10 @@ export function writeTool(
   const filename = filePath.includes("/")
     ? filePath.split("/").pop()!
     : filePath;
-  return `<div class="file-tool write-tool" data-tool-id="${escapeHtml(toolId)}">
-<div class="file-tool-header write-header"><span class="file-tool-icon">\uD83D\uDCDD</span> Write <span class="file-tool-path">${escapeHtml(filename)}</span></div>
-<div class="file-tool-fullpath">${escapeHtml(filePath)}</div>
-<div class="truncatable"><div class="truncatable-content"><pre class="file-content">${escapeHtml(content)}</pre></div><button class="expand-btn">Show more</button></div>
+  return `<div class="file-tool write-tool bg-slate-50 border border-slate-200 ${tw.card}" data-tool-id="${escapeHtml(toolId)}">
+<div class="file-tool-header write-header ${tw.fileHeader} text-slate-700"><span class="file-tool-icon font-mono text-cyan-600">W</span> Write <span class="file-tool-path ${tw.filePath}">${escapeHtml(filename)}</span></div>
+<div class="file-tool-fullpath ${tw.fullPath}">${escapeHtml(filePath)}</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content ${tw.codePre} !m-0">${escapeHtml(content)}</pre></div><button class="${tw.expandBtn}">Show more</button></div>
 </div>`;
 }
 
@@ -113,15 +133,15 @@ export function editTool(
     ? filePath.split("/").pop()!
     : filePath;
   const replaceAllHtml = replaceAll
-    ? ' <span class="edit-replace-all">(replace all)</span>'
+    ? ' <span class="edit-replace-all text-xs font-normal text-slate-400 font-mono">(replace all)</span>'
     : "";
-  return `<div class="file-tool edit-tool" data-tool-id="${escapeHtml(toolId)}">
-<div class="file-tool-header edit-header"><span class="file-tool-icon">\u270F\uFE0F</span> Edit <span class="file-tool-path">${escapeHtml(filename)}</span>${replaceAllHtml}</div>
-<div class="file-tool-fullpath">${escapeHtml(filePath)}</div>
+  return `<div class="file-tool edit-tool bg-slate-50 border border-slate-200 ${tw.card}" data-tool-id="${escapeHtml(toolId)}">
+<div class="file-tool-header edit-header ${tw.fileHeader} text-slate-700"><span class="file-tool-icon font-mono text-cyan-600">E</span> Edit <span class="file-tool-path ${tw.filePath}">${escapeHtml(filename)}</span>${replaceAllHtml}</div>
+<div class="file-tool-fullpath ${tw.fullPath}">${escapeHtml(filePath)}</div>
 <div class="truncatable"><div class="truncatable-content">
-<div class="edit-section edit-old"><div class="edit-label">\u2212</div><pre class="edit-content">${escapeHtml(oldString)}</pre></div>
-<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">${escapeHtml(newString)}</pre></div>
-</div><button class="expand-btn">Show more</button></div>
+<div class="edit-section edit-old flex my-1 rounded overflow-hidden bg-red-50/60"><div class="edit-label px-3 py-2 font-bold font-mono flex items-start text-red-800 bg-red-100">\u2212</div><pre class="edit-content m-0 flex-1 bg-transparent text-sm text-red-900 p-2 whitespace-pre-wrap break-words font-mono">${escapeHtml(oldString)}</pre></div>
+<div class="edit-section edit-new flex my-1 rounded overflow-hidden bg-green-50/60"><div class="edit-label px-3 py-2 font-bold font-mono flex items-start text-green-800 bg-green-100">+</div><pre class="edit-content m-0 flex-1 bg-transparent text-sm text-green-900 p-2 whitespace-pre-wrap break-words font-mono">${escapeHtml(newString)}</pre></div>
+</div><button class="${tw.expandBtn}">Show more</button></div>
 </div>`;
 }
 
@@ -131,11 +151,11 @@ export function bashTool(
   toolId: string,
 ): string {
   const descHtml = description
-    ? `\n<div class="tool-description">${escapeHtml(description)}</div>`
+    ? `\n<div class="tool-description text-sm text-slate-500 mb-2 italic">${escapeHtml(description)}</div>`
     : "";
-  return `<div class="tool-use bash-tool" data-tool-id="${escapeHtml(toolId)}">
-<div class="tool-header"><span class="tool-icon">$</span> Bash</div>${descHtml}
-<div class="truncatable"><div class="truncatable-content"><pre class="bash-command">${escapeHtml(command)}</pre></div><button class="expand-btn">Show more</button></div>
+  return `<div class="tool-use bash-tool bg-slate-50 border border-slate-200 ${tw.card}" data-tool-id="${escapeHtml(toolId)}">
+<div class="tool-header font-semibold text-slate-700 mb-2 flex items-center gap-2"><span class="tool-icon text-cyan-600 font-mono">$</span> Bash</div>${descHtml}
+<div class="truncatable"><div class="truncatable-content"><pre class="bash-command ${tw.codePre}">${escapeHtml(command)}</pre></div><button class="${tw.expandBtn}">Show more</button></div>
 </div>`;
 }
 
@@ -146,9 +166,9 @@ export function toolUse(
   toolId: string,
 ): string {
   const descHtml = description
-    ? `<div class="tool-description">${escapeHtml(description)}</div>`
+    ? `<div class="tool-description text-sm text-slate-500 mb-2 italic">${escapeHtml(description)}</div>`
     : "";
-  return `<div class="tool-use" data-tool-id="${escapeHtml(toolId)}"><div class="tool-header"><span class="tool-icon">\u2699</span> ${escapeHtml(toolName)}</div>${descHtml}<div class="truncatable"><div class="truncatable-content"><pre class="json">${escapeHtml(inputJson)}</pre></div><button class="expand-btn">Show more</button></div></div>`;
+  return `<div class="tool-use bg-slate-50 border border-slate-200 ${tw.card}" data-tool-id="${escapeHtml(toolId)}"><div class="tool-header font-semibold text-slate-700 mb-2 flex items-center gap-2"><span class="tool-icon text-cyan-600 font-mono">\u2699</span> ${escapeHtml(toolName)}</div>${descHtml}<div class="truncatable"><div class="truncatable-content"><pre class="json ${tw.codePre}">${escapeHtml(inputJson)}</pre></div><button class="${tw.expandBtn}">Show more</button></div></div>`;
 }
 
 export function toolResult(
@@ -157,10 +177,11 @@ export function toolResult(
   hasImages = false,
 ): string {
   const errorClass = isError ? " tool-error" : "";
+  const bgClass = isError ? "bg-red-50" : "bg-white";
   if (hasImages) {
-    return `<div class="tool-result${errorClass}">${contentHtml}</div>`;
+    return `<div class="tool-result${errorClass} ${bgClass} rounded-lg p-3 my-3">${contentHtml}</div>`;
   }
-  return `<div class="tool-result${errorClass}"><div class="truncatable"><div class="truncatable-content">${contentHtml}</div><button class="expand-btn">Show more</button></div></div>`;
+  return `<div class="tool-result${errorClass} ${bgClass} rounded-lg p-3 my-3"><div class="truncatable"><div class="truncatable-content">${contentHtml}</div><button class="${tw.expandBtn}">Show more</button></div></div>`;
 }
 
 export function commitCard(
@@ -170,10 +191,16 @@ export function commitCard(
 ): string {
   if (githubRepo) {
     const githubLink = `https://github.com/${githubRepo}/commit/${commitHash}`;
-    return `<div class="commit-card"><a href="${githubLink}"><span class="commit-card-hash">${escapeHtml(commitHash.slice(0, 7))}</span> ${escapeHtml(commitMsg)}</a></div>`;
+    return `<div class="commit-card my-2 px-3.5 py-2.5 bg-cyan-50 border-l-4 border-cyan-600 rounded-md"><a href="${githubLink}" class="no-underline text-slate-800 block hover:text-cyan-600"><span class="commit-card-hash font-mono text-cyan-600 font-semibold mr-2">${escapeHtml(commitHash.slice(0, 7))}</span> ${escapeHtml(commitMsg)}</a></div>`;
   }
-  return `<div class="commit-card"><span class="commit-card-hash">${escapeHtml(commitHash.slice(0, 7))}</span> ${escapeHtml(commitMsg)}</div>`;
+  return `<div class="commit-card my-2 px-3.5 py-2.5 bg-cyan-50 border-l-4 border-cyan-600 rounded-md"><span class="commit-card-hash font-mono text-cyan-600 font-semibold mr-2">${escapeHtml(commitHash.slice(0, 7))}</span> ${escapeHtml(commitMsg)}</div>`;
 }
+
+const messageStyles: Record<string, { bg: string; border: string; roleColor: string }> = {
+  user: { bg: "bg-cyan-50/50", border: "border-cyan-600", roleColor: "text-cyan-700" },
+  assistant: { bg: "bg-white", border: "border-slate-200", roleColor: "text-slate-500" },
+  "tool-reply": { bg: "bg-slate-50", border: "border-slate-300", roleColor: "text-slate-500" },
+};
 
 export function message(
   roleClass: string,
@@ -182,11 +209,12 @@ export function message(
   timestamp: string,
   contentHtml: string,
 ): string {
-  return `<div class="message ${roleClass}" id="${msgId}"><div class="message-header"><span class="role-label">${escapeHtml(roleLabel)}</span><a href="#${msgId}" class="timestamp-link"><time datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></a></div><div class="message-content">${contentHtml}</div></div>`;
+  const style = messageStyles[roleClass] || messageStyles.assistant;
+  return `<div class="message ${roleClass} mb-4 rounded-lg overflow-hidden shadow-sm ${style.bg} border-l-4 ${style.border}" id="${msgId}"><div class="message-header flex justify-between items-center px-4 py-2 bg-black/[0.02] text-sm"><span class="role-label font-semibold uppercase tracking-widest text-xs font-mono ${style.roleColor}">${escapeHtml(roleLabel)}</span><a href="#${msgId}" class="timestamp-link text-inherit no-underline hover:underline"><time class="text-slate-400 text-xs font-mono" datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></a></div><div class="message-content p-4 prose-content">${contentHtml}</div></div>`;
 }
 
 export function continuation(contentHtml: string): string {
-  return `<details class="continuation"><summary>Session continuation summary</summary>${contentHtml}</details>`;
+  return `<details class="continuation mb-4"><summary class="cursor-pointer px-4 py-3 bg-slate-50 border-l-4 border-slate-300 rounded-lg font-medium text-slate-500 hover:bg-slate-100 font-mono text-sm">Session continuation summary</summary><div class="p-4 prose-content">${contentHtml}</div></details>`;
 }
 
 export function indexItem(
@@ -196,7 +224,7 @@ export function indexItem(
   renderedContent: string,
   statsHtml: string,
 ): string {
-  return `<div class="index-item"><a href="${link}"><div class="index-item-header"><span class="index-item-number">#${promptNum}</span><time datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-item-content">${renderedContent}</div></a>${statsHtml}</div>`;
+  return `<div class="index-item mb-4 rounded-lg overflow-hidden shadow-sm bg-white border border-slate-200 border-l-4 border-l-cyan-600"><a href="${link}" class="block no-underline text-inherit hover:bg-slate-50"><div class="index-item-header flex justify-between items-center px-4 py-2 bg-slate-50 text-sm"><span class="index-item-number font-semibold text-cyan-600 font-mono">#${promptNum}</span><time class="text-slate-400 text-xs font-mono" datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-item-content p-4 prose-content">${renderedContent}</div></a>${statsHtml}</div>`;
 }
 
 export function indexCommit(
@@ -207,9 +235,9 @@ export function indexCommit(
 ): string {
   if (githubRepo) {
     const githubLink = `https://github.com/${githubRepo}/commit/${commitHash}`;
-    return `<div class="index-commit"><a href="${githubLink}"><div class="index-commit-header"><span class="index-commit-hash">${escapeHtml(commitHash.slice(0, 7))}</span><time datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-commit-msg">${escapeHtml(commitMsg)}</div></a></div>`;
+    return `<div class="index-commit mb-3 px-4 py-2.5 bg-cyan-50 border-l-4 border-cyan-600 rounded-lg shadow-sm"><a href="${githubLink}" class="block no-underline text-inherit hover:bg-cyan-100/50 -m-2.5 p-2.5 rounded-lg"><div class="index-commit-header flex justify-between items-center text-sm mb-1"><span class="index-commit-hash font-mono text-cyan-600 font-semibold">${escapeHtml(commitHash.slice(0, 7))}</span><time class="text-slate-400 text-xs font-mono" datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-commit-msg text-slate-800">${escapeHtml(commitMsg)}</div></a></div>`;
   }
-  return `<div class="index-commit"><div class="index-commit-header"><span class="index-commit-hash">${escapeHtml(commitHash.slice(0, 7))}</span><time datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-commit-msg">${escapeHtml(commitMsg)}</div></div>`;
+  return `<div class="index-commit mb-3 px-4 py-2.5 bg-cyan-50 border-l-4 border-cyan-600 rounded-lg shadow-sm"><div class="index-commit-header flex justify-between items-center text-sm mb-1"><span class="index-commit-hash font-mono text-cyan-600 font-semibold">${escapeHtml(commitHash.slice(0, 7))}</span><time class="text-slate-400 text-xs font-mono" datetime="${escapeHtml(timestamp)}" data-timestamp="${escapeHtml(timestamp)}">${escapeHtml(timestamp)}</time></div><div class="index-commit-msg text-slate-800">${escapeHtml(commitMsg)}</div></div>`;
 }
 
 export function indexStats(
@@ -218,11 +246,11 @@ export function indexStats(
 ): string {
   if (!toolStatsStr && !longTextsHtml) return "";
   const statsSpan = toolStatsStr ? `<span>${escapeHtml(toolStatsStr)}</span>` : "";
-  return `<div class="index-item-stats">${statsSpan}${longTextsHtml}</div>`;
+  return `<div class="index-item-stats px-4 py-2 pb-3 pl-8 text-sm text-slate-400 font-mono border-t border-slate-100">${statsSpan}${longTextsHtml}</div>`;
 }
 
 export function indexLongText(renderedContent: string): string {
-  return `<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content">${renderedContent}</div></div><button class="expand-btn">Show more</button></div></div>`;
+  return `<div class="index-item-long-text mt-2 p-3 bg-white rounded-lg border-l-[3px] border-slate-200"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content text-slate-800 prose-content">${renderedContent}</div></div><button class="${tw.expandBtn}">Show more</button></div></div>`;
 }
 
 // --- High-level render functions ---
@@ -331,15 +359,15 @@ export function renderContentBlock(
         let lastEnd = 0;
         for (const match of commitsFound) {
           const before = content.slice(lastEnd, match.index).trim();
-          if (before) parts.push(`<pre>${escapeHtml(before)}</pre>`);
+          if (before) parts.push(`<pre class="${tw.codePre}">${escapeHtml(before)}</pre>`);
           parts.push(commitCard(match[1], match[2], ctx.githubRepo));
           lastEnd = match.index! + match[0].length;
         }
         const after = content.slice(lastEnd).trim();
-        if (after) parts.push(`<pre>${escapeHtml(after)}</pre>`);
+        if (after) parts.push(`<pre class="${tw.codePre}">${escapeHtml(after)}</pre>`);
         return toolResult(parts.join(""), isError, false);
       }
-      return toolResult(`<pre>${escapeHtml(content)}</pre>`, isError, false);
+      return toolResult(`<pre class="${tw.codePre}">${escapeHtml(content)}</pre>`, isError, false);
     }
 
     if (Array.isArray(content)) {
@@ -350,7 +378,7 @@ export function renderContentBlock(
           const itemType = itemObj.type as string;
           if (itemType === "text") {
             const text = (itemObj.text as string) || "";
-            if (text) parts.push(`<pre>${escapeHtml(text)}</pre>`);
+            if (text) parts.push(`<pre class="${tw.codePre}">${escapeHtml(text)}</pre>`);
           } else if (itemType === "image") {
             const source = (itemObj.source || {}) as Record<string, unknown>;
             const mediaType = (source.media_type as string) || "image/png";
@@ -363,7 +391,7 @@ export function renderContentBlock(
             parts.push(formatJson(item));
           }
         } else {
-          parts.push(`<pre>${escapeHtml(String(item))}</pre>`);
+          parts.push(`<pre class="${tw.codePre}">${escapeHtml(String(item))}</pre>`);
         }
       }
       const contentHtml = parts.length ? parts.join("") : formatJson(content);

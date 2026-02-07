@@ -29,7 +29,7 @@ describe("renderMarkdownText", () => {
 describe("formatJson", () => {
   test("formats object as pretty JSON in pre block", () => {
     const result = formatJson({ key: "value", number: 42, nested: { a: 1 } });
-    expect(result).toContain('<pre class="json">');
+    expect(result).toContain('class="json');
     expect(result).toContain("&quot;key&quot;");
     expect(result).toContain("&quot;value&quot;");
     expect(result).toContain("42");
